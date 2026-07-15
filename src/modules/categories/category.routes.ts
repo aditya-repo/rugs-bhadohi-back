@@ -8,6 +8,7 @@ import { categoryQuerySchema, createCategorySchema, updateCategorySchema } from 
 const router = Router();
 
 router.get("/public/homepage", categoryController.listPublicHomepage);
+router.get("/public/list", categoryController.listPublicActive);
 
 router.use(authenticate);
 

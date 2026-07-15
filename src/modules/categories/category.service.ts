@@ -28,6 +28,10 @@ export class CategoryService {
     return categoryRepository.findHomepage();
   }
 
+  async listPublicActive() {
+    return categoryRepository.findPublicActive();
+  }
+
   async getById(id: string) {
     const category = await categoryRepository.findById(id);
     if (!category) throw new NotFoundError("Category not found");

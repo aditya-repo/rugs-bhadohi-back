@@ -31,7 +31,50 @@ export class ProductService {
   }
 
   async listPublicArtistCollection() {
-    return productRepository.findArtistCollection();
+    const products = await productRepository.findArtistCollection();
+    const seen = new Set<string>();
+    const unique: typeof products = [];
+
+    for (const product of products) {
+      const key = (product.collection?.split(",")[0]?.trim() || product.title).toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(product);
+    }
+
+    return unique;
+  }
+
+  async listPublicFeatured(limit = 8) {
+    return productRepository.findFeaturedProducts(limit);
+  }
+
+  async getPublicByIdOrSlug(idOrSlug: string) {
+    const product = await productRepository.findPublicByIdOrSlug(idOrSlug);
+    if (!product) throw new NotFoundError("Product not found");
+    return product;
+  }
+
+  async listPublicCatalog(query: Record<string, string | undefined>) {
+    const page = Math.max(1, parseInt(query.page ?? "1", 10) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(query.limit ?? "100", 10) || 100));
+    const skip = (page - 1) * limit;
+    const { items, total } = await productRepository.findPublicCatalog({
+      skip,
+      limit,
+      search: query.search,
+      categorySlug: query.categorySlug,
+      collectionSlug: query.collectionSlug,
+      shape: query.shape,
+      material: query.material,
+      technique: query.technique,
+      pattern: query.pattern,
+      thickness: query.thickness,
+      size: query.size,
+      color: query.color,
+      sort: (query.sort as "featured" | "newest" | "title" | undefined) ?? "featured",
+    });
+    return { items, page, limit, total };
   }
 
   private buildSeoData(seo?: CreateProductInput["seo"]): Prisma.ProductSEOCreateWithoutProductInput | undefined {

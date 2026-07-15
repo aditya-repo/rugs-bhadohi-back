@@ -93,6 +93,230 @@ export class ProductRepository {
     });
   }
 
+  findFeaturedProducts(limit = 8) {
+    return prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        status: "PUBLISHED",
+        isFeatured: true,
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        shortDescription: true,
+        brand: true,
+        images: { orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }], take: 1 },
+        variants: {
+          where: { status: "ACTIVE" },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: {
+            price: true,
+            salePrice: true,
+            attributes: true,
+          },
+        },
+      },
+    });
+  }
+
+  findPublicByIdOrSlug(idOrSlug: string) {
+    return prisma.product.findFirst({
+      where: {
+        deletedAt: null,
+        status: "PUBLISHED",
+        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        shortDescription: true,
+        description: true,
+        brand: true,
+        collection: true,
+        designer: true,
+        origin: true,
+        careInstructions: true,
+        isFeatured: true,
+        isNewArrival: true,
+        isBestSeller: true,
+        category: { select: { id: true, name: true, slug: true } },
+        images: {
+          orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }],
+          select: { path: true, alt: true, isFeatured: true },
+        },
+        variants: {
+          where: { status: "ACTIVE" },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            sku: true,
+            price: true,
+            salePrice: true,
+            stock: true,
+            thumbnail: true,
+            attributes: true,
+          },
+        },
+        _count: { select: { reviews: true } },
+      },
+    });
+  }
+
+  private static parseCsv(value?: string): string[] {
+    if (!value?.trim()) return [];
+    return value
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  private static attributeFilter(
+    keys: string[],
+    values: string[],
+  ): Prisma.ProductWhereInput | undefined {
+    if (values.length === 0) return undefined;
+    return {
+      OR: values.flatMap((value) =>
+        keys.map((key) => ({
+          variants: {
+            some: {
+              status: "ACTIVE" as const,
+              attributes: { path: [key], equals: value },
+            },
+          },
+        })),
+      ),
+    };
+  }
+
+  async findPublicCatalog(params: {
+    skip: number;
+    limit: number;
+    search?: string;
+    categorySlug?: string;
+    collectionSlug?: string;
+    shape?: string;
+    material?: string;
+    technique?: string;
+    pattern?: string;
+    thickness?: string;
+    size?: string;
+    color?: string;
+    sort?: "featured" | "newest" | "title";
+  }) {
+    const where: Prisma.ProductWhereInput = {
+      deletedAt: null,
+      status: "PUBLISHED",
+    };
+
+    const andClauses: Prisma.ProductWhereInput[] = [];
+
+    if (params.search) {
+      andClauses.push({
+        OR: [
+          { title: { contains: params.search, mode: "insensitive" } },
+          { slug: { contains: params.search, mode: "insensitive" } },
+          { shortDescription: { contains: params.search, mode: "insensitive" } },
+          { brand: { contains: params.search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    const categorySlugs = ProductRepository.parseCsv(params.categorySlug);
+    if (categorySlugs.length > 0) {
+      andClauses.push({ category: { slug: { in: categorySlugs } } });
+    }
+
+    const collectionSlugs = ProductRepository.parseCsv(params.collectionSlug);
+    if (collectionSlugs.length > 0) {
+      const collections = await prisma.collection.findMany({
+        where: { slug: { in: collectionSlugs }, status: "ACTIVE", deletedAt: null },
+        select: { title: true },
+      });
+      const titles = collections.map((c) => c.title).filter(Boolean);
+      if (titles.length === 0) {
+        return { items: [], total: 0 };
+      }
+      andClauses.push({
+        OR: titles.map((title) => ({
+          collection: { contains: title, mode: "insensitive" as const },
+        })),
+      });
+    }
+
+    const attributeClauses = [
+      ProductRepository.attributeFilter(["shape"], ProductRepository.parseCsv(params.shape)),
+      ProductRepository.attributeFilter(["material"], ProductRepository.parseCsv(params.material)),
+      ProductRepository.attributeFilter(
+        ["technique", "weavingType"],
+        ProductRepository.parseCsv(params.technique),
+      ),
+      ProductRepository.attributeFilter(
+        ["style", "patternArt", "pattern"],
+        ProductRepository.parseCsv(params.pattern),
+      ),
+      ProductRepository.attributeFilter(["thickness"], ProductRepository.parseCsv(params.thickness)),
+      ProductRepository.attributeFilter(["size"], ProductRepository.parseCsv(params.size)),
+      ProductRepository.attributeFilter(["color"], ProductRepository.parseCsv(params.color)),
+    ].filter(Boolean) as Prisma.ProductWhereInput[];
+
+    andClauses.push(...attributeClauses);
+
+    if (andClauses.length > 0) {
+      where.AND = andClauses;
+    }
+
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      params.sort === "title"
+        ? [{ title: "asc" }]
+        : params.sort === "newest"
+          ? [{ createdAt: "desc" }]
+          : [{ isFeatured: "desc" }, { createdAt: "desc" }];
+
+    const select = {
+      id: true,
+      title: true,
+      slug: true,
+      shortDescription: true,
+      brand: true,
+      collection: true,
+      isFeatured: true,
+      isNewArrival: true,
+      isBestSeller: true,
+      category: { select: { id: true, name: true, slug: true } },
+      images: { orderBy: [{ isFeatured: "desc" as const }, { sortOrder: "asc" as const }], take: 1 },
+      variants: {
+        where: { status: "ACTIVE" as const },
+        orderBy: { createdAt: "asc" as const },
+        take: 1,
+        select: {
+          price: true,
+          salePrice: true,
+          attributes: true,
+        },
+      },
+      _count: { select: { reviews: true } },
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip: params.skip,
+        take: params.limit,
+        orderBy,
+        select,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return { items, total };
+  }
+
   create(data: Prisma.ProductCreateInput) {
     return prisma.product.create({
       data,
