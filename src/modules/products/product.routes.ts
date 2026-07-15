@@ -9,6 +9,7 @@ import {
   bulkIdsSchema,
   createProductSchema,
   productQuerySchema,
+  publicProductListQuerySchema,
   reorderImagesSchema,
   updateProductSchema,
 } from "./product.validator";
@@ -16,6 +17,13 @@ import {
 const router = Router();
 
 router.get("/public/artist-collection", productController.listPublicArtistCollection);
+router.get("/public/featured", productController.listPublicFeatured);
+router.get(
+  "/public/list",
+  validateQuery(publicProductListQuerySchema),
+  productController.listPublicCatalog,
+);
+router.get("/public/:idOrSlug", productController.getPublicByIdOrSlug);
 
 router.use(authenticate);
 

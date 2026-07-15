@@ -12,6 +12,29 @@ export class ProductController {
     sendSuccess(res, products, "Artist collection retrieved");
   });
 
+  listPublicFeatured = asyncHandler(async (_req, res: Response) => {
+    const products = await productService.listPublicFeatured(8);
+    sendSuccess(res, products, "Featured products retrieved");
+  });
+
+  getPublicByIdOrSlug = asyncHandler(async (req, res: Response) => {
+    const product = await productService.getPublicByIdOrSlug(getParam(req.params.idOrSlug));
+    sendSuccess(res, product, "Product retrieved");
+  });
+
+  listPublicCatalog = asyncHandler(async (req, res: Response) => {
+    const result = await productService.listPublicCatalog(
+      req.query as Record<string, string | undefined>,
+    );
+    sendSuccess(
+      res,
+      result.items,
+      "Products retrieved",
+      200,
+      buildPaginationMeta(result.page, result.limit, result.total),
+    );
+  });
+
   list = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const result = await productService.list(req.query as Record<string, string | undefined>);
     sendSuccess(res, result.items, "Products retrieved", 200, buildPaginationMeta(result.page, result.limit, result.total));

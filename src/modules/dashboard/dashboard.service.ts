@@ -58,7 +58,7 @@ export class DashboardRepository {
     return Object.entries(monthly).map(([month, revenue]) => ({ month, revenue }));
   }
 
-  async getLatestOrders(limit = 10) {
+  async getLatestOrders(limit = 4) {
     return prisma.order.findMany({
       take: limit,
       orderBy: { createdAt: "desc" },

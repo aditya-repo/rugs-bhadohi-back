@@ -22,6 +22,11 @@ export class CategoryController {
     sendSuccess(res, categories, "Homepage categories retrieved");
   });
 
+  listPublicActive = asyncHandler(async (_req, res: Response) => {
+    const categories = await categoryService.listPublicActive();
+    sendSuccess(res, categories, "Public categories retrieved");
+  });
+
   getById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const category = await categoryService.getById(getParam(req.params.id));
     sendSuccess(res, category);

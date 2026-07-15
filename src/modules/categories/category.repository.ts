@@ -101,6 +101,21 @@ export class CategoryRepository {
       },
     });
   }
+
+  findPublicActive() {
+    return prisma.category.findMany({
+      where: { deletedAt: null, status: "ACTIVE" },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        image: true,
+        sortOrder: true,
+      },
+    });
+  }
 }
 
 export const categoryRepository = new CategoryRepository();

@@ -73,6 +73,23 @@ export const productQuerySchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
+/** Public storefront catalog list query. */
+export const publicProductListQuerySchema = z.object({
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  search: z.string().optional(),
+  categorySlug: z.string().optional(),
+  collectionSlug: z.string().optional(),
+  shape: z.string().optional(),
+  material: z.string().optional(),
+  technique: z.string().optional(),
+  pattern: z.string().optional(),
+  thickness: z.string().optional(),
+  size: z.string().optional(),
+  color: z.string().optional(),
+  sort: z.enum(["featured", "newest", "title"]).optional(),
+});
+
 export const bulkIdsSchema = z.object({
   ids: z.array(z.string()).min(1),
 });
