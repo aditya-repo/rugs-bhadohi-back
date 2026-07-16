@@ -12,7 +12,7 @@ import { swaggerSpec } from "./config/swagger";
 export function createApp(): express.Application {
   const app = express();
 
-  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+  // CORS must run before other middleware so preflight always gets ACAO headers.
   app.use(
     cors({
       origin(origin, callback) {
@@ -25,11 +25,19 @@ export function createApp(): express.Application {
           callback(null, true);
           return;
         }
-        callback(new Error(`CORS blocked origin: ${origin}`));
+        logger.warn(`CORS blocked origin: ${origin}`);
+        // Do not pass an Error — that strips CORS headers on preflight and
+        // surfaces as "No Access-Control-Allow-Origin" in the browser.
+        callback(null, false);
       },
       credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      optionsSuccessStatus: 204,
     }),
   );
+
+  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -40,7 +48,11 @@ export function createApp(): express.Application {
   );
 
   app.get("/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      corsOrigins: allowedFrontendOrigins,
+    });
   });
 
   app.use(

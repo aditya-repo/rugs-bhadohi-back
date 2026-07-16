@@ -1,5 +1,5 @@
 import { createApp } from "./app";
-import { env } from "./config/env";
+import { allowedFrontendOrigins, env } from "./config/env";
 import { logger } from "./config/logger";
 import { prisma } from "./config/database";
 
@@ -13,6 +13,7 @@ async function start(): Promise<void> {
     app.listen(env.PORT, env.HOST, () => {
       logger.info(`Server running on http://${env.HOST}:${env.PORT}`);
       logger.info(`Swagger docs: http://${env.HOST}:${env.PORT}/api/docs`);
+      logger.info(`CORS allowlist: ${allowedFrontendOrigins.join(", ")}`);
     });
   } catch (error) {
     logger.error("Failed to start server:", error);

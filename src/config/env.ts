@@ -50,10 +50,26 @@ export const env = parsed.data;
 export const isProduction = env.NODE_ENV === "production";
 export const isDevelopment = env.NODE_ENV === "development";
 
-/** Parsed CORS allowlist from FRONTEND_URL (comma-separated). */
-export const allowedFrontendOrigins = env.FRONTEND_URL.split(",")
-  .map((origin) => origin.trim().replace(/\/$/, ""))
-  .filter(Boolean);
+/** Always-allowed production storefront origins (even if FRONTEND_URL is misconfigured). */
+const BUILTIN_FRONTEND_ORIGINS = [
+  "https://www.rugsbhadohi.com",
+  "https://rugsbhadohi.com",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/$/, "");
+}
+
+/** Parsed CORS allowlist: FRONTEND_URL entries + built-in production/local origins. */
+export const allowedFrontendOrigins = [
+  ...new Set([
+    ...env.FRONTEND_URL.split(",").map(normalizeOrigin).filter(Boolean),
+    ...BUILTIN_FRONTEND_ORIGINS,
+  ]),
+];
 
 /** Primary frontend base URL (first FRONTEND_URL entry) for links in emails. */
-export const primaryFrontendUrl = allowedFrontendOrigins[0] ?? env.FRONTEND_URL;
+export const primaryFrontendUrl =
+  normalizeOrigin(env.FRONTEND_URL.split(",")[0] ?? "") || BUILTIN_FRONTEND_ORIGINS[0];
