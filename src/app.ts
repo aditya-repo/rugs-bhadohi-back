@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
-import { env } from "./config/env";
+import { allowedFrontendOrigins } from "./config/env";
 import { logger } from "./config/logger";
 import routes from "./routes";
 import { errorHandler, notFoundHandler } from "./utils/asyncHandler";
@@ -15,7 +15,18 @@ export function createApp(): express.Application {
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(
     cors({
-      origin: env.FRONTEND_URL,
+      origin(origin, callback) {
+        // Non-browser clients (curl, server-to-server) send no Origin header.
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        if (allowedFrontendOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`CORS blocked origin: ${origin}`));
+      },
       credentials: true,
     }),
   );

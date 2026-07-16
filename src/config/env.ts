@@ -21,7 +21,12 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().optional(),
   CLOUDINARY_FOLDER: z.string().default("rug-casa"),
   APP_URL: z.string().url(),
-  FRONTEND_URL: z.string().url(),
+  /**
+   * Comma-separated storefront origins allowed by CORS.
+   * Example: https://www.rugsbhadohi.com,https://rugsbhadohi.com,http://localhost:3000
+   * The first entry is used for email / password-reset links.
+   */
+  FRONTEND_URL: z.string().min(1),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_NAME: z.string().default("Admin"),
@@ -44,3 +49,11 @@ export const env = parsed.data;
 
 export const isProduction = env.NODE_ENV === "production";
 export const isDevelopment = env.NODE_ENV === "development";
+
+/** Parsed CORS allowlist from FRONTEND_URL (comma-separated). */
+export const allowedFrontendOrigins = env.FRONTEND_URL.split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+/** Primary frontend base URL (first FRONTEND_URL entry) for links in emails. */
+export const primaryFrontendUrl = allowedFrontendOrigins[0] ?? env.FRONTEND_URL;
