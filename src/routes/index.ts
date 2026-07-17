@@ -13,6 +13,7 @@ import settingsRoutes from "../modules/settings/settings.routes";
 import searchRoutes from "../modules/search/search.routes";
 import mediaRoutes from "../modules/media/media.routes";
 import seoRoutes from "../modules/seo/seo.routes";
+import wishlistRoutes from "../modules/wishlist/wishlist.routes";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use("/collections", collectionRoutes);
 router.use("/products", productRoutes);
 router.use("/orders", orderRoutes);
 router.use("/customers", customerRoutes);
+router.use("/wishlist", wishlistRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/returns", returnRoutes);
 router.use("/banners", bannerRoutes);

@@ -36,8 +36,9 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().email().optional(),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+  /** Shared secret for storefront customer sync/profile (Next.js server → API). */
+  CUSTOMER_SYNC_SECRET: z.string().min(16).optional(),
 });
-
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {

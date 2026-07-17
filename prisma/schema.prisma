@@ -270,6 +270,9 @@ model Customer {
   firstName   String         @map("first_name")
   lastName    String         @map("last_name")
   passwordHash String?       @map("password_hash")
+  image       String?
+  gender      String?
+  dateOfBirth DateTime?      @map("date_of_birth") @db.Date
   status      CustomerStatus @default(ACTIVE)
   totalSpend  Decimal        @default(0) @map("total_spend") @db.Decimal(14, 2)
   lastLoginAt DateTime?      @map("last_login_at")
