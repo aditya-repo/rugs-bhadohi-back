@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database";
 
 const wishlistProductSelect = {
@@ -12,7 +13,7 @@ const wishlistProductSelect = {
   isBestSeller: true,
   category: { select: { id: true, name: true, slug: true } },
   images: {
-    orderBy: [{ isFeatured: "desc" as const }, { sortOrder: "asc" as const }],
+    orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }] as Prisma.ProductImageOrderByWithRelationInput[],
     take: 1,
   },
   variants: {
@@ -26,7 +27,7 @@ const wishlistProductSelect = {
     },
   },
   _count: { select: { reviews: true } },
-} as const;
+} satisfies Prisma.ProductSelect;
 
 export class WishlistRepository {
   findCustomerIdByEmail(email: string) {
