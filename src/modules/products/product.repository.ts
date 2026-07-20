@@ -38,7 +38,18 @@ export class ProductRepository {
         include: {
           category: { select: { id: true, name: true, slug: true } },
           images: { orderBy: { sortOrder: "asc" }, take: 1 },
-          variants: { select: { id: true, sku: true, price: true, salePrice: true, stock: true, status: true } },
+          variants: {
+            select: {
+              id: true,
+              sku: true,
+              price: true,
+              salePrice: true,
+              stock: true,
+              status: true,
+              thumbnail: true,
+              attributes: true,
+            },
+          },
           _count: { select: { reviews: true } },
         },
       }),
@@ -82,10 +93,10 @@ export class ProductRepository {
         variants: {
           where: { status: "ACTIVE" },
           orderBy: { createdAt: "asc" },
-          take: 1,
           select: {
             price: true,
             salePrice: true,
+            thumbnail: true,
             attributes: true,
           },
         },
@@ -112,10 +123,10 @@ export class ProductRepository {
         variants: {
           where: { status: "ACTIVE" },
           orderBy: { createdAt: "asc" },
-          take: 1,
           select: {
             price: true,
             salePrice: true,
+            thumbnail: true,
             attributes: true,
           },
         },
@@ -178,6 +189,7 @@ export class ProductRepository {
   private static attributeFilter(
     keys: string[],
     values: string[],
+    match: "equals" | "contains" = "equals",
   ): Prisma.ProductWhereInput | undefined {
     if (values.length === 0) return undefined;
     return {
@@ -186,7 +198,10 @@ export class ProductRepository {
           variants: {
             some: {
               status: "ACTIVE" as const,
-              attributes: { path: [key], equals: value },
+              attributes:
+                match === "contains"
+                  ? { path: [key], string_contains: value }
+                  : { path: [key], equals: value },
             },
           },
         })),
@@ -251,7 +266,11 @@ export class ProductRepository {
 
     const attributeClauses = [
       ProductRepository.attributeFilter(["shape"], ProductRepository.parseCsv(params.shape)),
-      ProductRepository.attributeFilter(["material"], ProductRepository.parseCsv(params.material)),
+      ProductRepository.attributeFilter(
+        ["material"],
+        ProductRepository.parseCsv(params.material),
+        "contains",
+      ),
       ProductRepository.attributeFilter(
         ["technique", "weavingType"],
         ProductRepository.parseCsv(params.technique),
@@ -293,10 +312,10 @@ export class ProductRepository {
       variants: {
         where: { status: "ACTIVE" as const },
         orderBy: { createdAt: "asc" as const },
-        take: 1,
         select: {
           price: true,
           salePrice: true,
+          thumbnail: true,
           attributes: true,
         },
       },

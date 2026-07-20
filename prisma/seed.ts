@@ -23,6 +23,28 @@ async function main(): Promise<void> {
 
   console.log(`Admin seeded: ${admin.email}`);
 
+  // Master colour list
+  const { DEFAULT_COLORS } = await import("../src/modules/colors/default-colors");
+  for (let i = 0; i < DEFAULT_COLORS.length; i++) {
+    const item = DEFAULT_COLORS[i];
+    await prisma.color.upsert({
+      where: { name: item.name },
+      update: {
+        hex: item.hex.toUpperCase(),
+        sortOrder: i + 1,
+        status: "ACTIVE",
+        deletedAt: null,
+      },
+      create: {
+        name: item.name,
+        hex: item.hex.toUpperCase(),
+        sortOrder: i + 1,
+        status: "ACTIVE",
+      },
+    });
+  }
+  console.log(`Colors seeded: ${DEFAULT_COLORS.length}`);
+
   // Homepage storefront categories (featured)
   const homepageCategories = [
     {
