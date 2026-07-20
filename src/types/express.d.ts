@@ -6,6 +6,16 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     name: string;
   };
+  /** Raw JSON body string (for webhook signature verification). */
+  rawBody?: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: string;
+    }
+  }
 }
 
 export interface PaginationQuery {

@@ -6,6 +6,46 @@ import { activityService } from "../../services/activity.service";
 import { orderRepository } from "./order.repository";
 import type { UpdateOrderStatusInput } from "./order.validator";
 
+function variantSizeLabel(variant: {
+  length: unknown;
+  width: unknown;
+  attributes: unknown;
+} | null): string {
+  if (!variant) return "";
+  const length = decimalToNumber(variant.length as never);
+  const width = decimalToNumber(variant.width as never);
+  if (length > 0 && width > 0) {
+    return `${length} x ${width}`;
+  }
+  const attrs = variant.attributes;
+  if (attrs && typeof attrs === "object" && !Array.isArray(attrs)) {
+    const record = attrs as Record<string, unknown>;
+    const size = record.size ?? record.sizeLabel;
+    if (typeof size === "string" && size.trim()) return size.trim();
+  }
+  return "";
+}
+
+function mapCustomerOrderStatus(
+  status: string,
+  paymentStatus: string,
+): "delivered" | "shipped" | "processing" | "cancelled" | "failed" | "pending_payment" {
+  if (paymentStatus === "FAILED") return "failed";
+  if (paymentStatus === "PENDING" && status === "PENDING") return "pending_payment";
+  switch (status) {
+    case "DELIVERED":
+      return "delivered";
+    case "SHIPPED":
+      return "shipped";
+    case "CANCELLED":
+    case "RETURNED":
+    case "REFUNDED":
+      return "cancelled";
+    default:
+      return "processing";
+  }
+}
+
 export class OrderService {
   async list(query: Record<string, string | undefined>) {
     const { page, limit, skip } = parsePagination(query);
@@ -19,6 +59,41 @@ export class OrderService {
       sortOrder: query.sortOrder as "asc" | "desc" | undefined,
     });
     return { items, page, limit, total };
+  }
+
+  async listRecentForCustomer(email: string, limitRaw?: string) {
+    const limit = Math.min(20, Math.max(1, parseInt(limitRaw ?? "10", 10) || 10));
+    const orders = await orderRepository.findRecentByCustomerEmail(email, limit);
+
+    return orders.map((order) => {
+      const first = order.items[0] ?? null;
+      const extraCount = Math.max(0, order._count.items - 1);
+      const imagePath =
+        first?.variant?.thumbnail ||
+        first?.product.images[0]?.path ||
+        "";
+      const productName = first?.title || first?.product.title || "Order item";
+      const size = variantSizeLabel(first?.variant ?? null);
+      const status = mapCustomerOrderStatus(order.status, order.paymentStatus);
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        date: order.createdAt.toISOString(),
+        productName:
+          extraCount > 0 ? `${productName} +${extraCount} more` : productName,
+        size,
+        itemCount: order._count.items,
+        total: decimalToNumber(order.total),
+        currency: order.currency,
+        imageSrc: imagePath,
+        imageAlt: first?.product.images[0]?.alt || productName,
+        status,
+        orderStatus: order.status,
+        paymentStatus: order.paymentStatus,
+        actionLabel: order.status === "SHIPPED" ? "Track Order" : "View Details",
+      };
+    });
   }
 
   async getById(id: string) {

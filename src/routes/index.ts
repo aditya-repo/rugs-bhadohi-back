@@ -15,6 +15,9 @@ import searchRoutes from "../modules/search/search.routes";
 import mediaRoutes from "../modules/media/media.routes";
 import seoRoutes from "../modules/seo/seo.routes";
 import wishlistRoutes from "../modules/wishlist/wishlist.routes";
+import checkoutRoutes from "../modules/checkout/checkout.routes";
+import addressRoutes from "../modules/addresses/address.routes";
+import cartRoutes from "../modules/cart/cart.routes";
 
 const router = Router();
 
@@ -27,6 +30,9 @@ router.use("/products", productRoutes);
 router.use("/orders", orderRoutes);
 router.use("/customers", customerRoutes);
 router.use("/wishlist", wishlistRoutes);
+router.use("/checkout", checkoutRoutes);
+router.use("/addresses", addressRoutes);
+router.use("/cart", cartRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/returns", returnRoutes);
 router.use("/banners", bannerRoutes);

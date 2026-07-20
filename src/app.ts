@@ -38,7 +38,15 @@ export function createApp(): express.Application {
   );
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-  app.use(express.json({ limit: "10mb" }));
+  // Preserve raw body for Cashfree webhook HMAC verification.
+  app.use(
+    express.json({
+      limit: "10mb",
+      verify: (req, _res, buf) => {
+        (req as express.Request & { rawBody?: string }).rawBody = buf.toString("utf8");
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
   app.use(

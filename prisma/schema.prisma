@@ -308,6 +308,7 @@ model Customer {
   reviews       Review[]
   wishlistItems WishlistItem[]
   returnRequests ReturnRequest[]
+  cart          Cart?
 
   @@index([status])
   @@index([email])
@@ -315,25 +316,69 @@ model Customer {
 }
 
 model Address {
-  id         String   @id @default(cuid())
-  customerId String   @map("customer_id")
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  label      String?
-  line1      String
-  line2      String?
-  city       String
-  state      String
-  postalCode String   @map("postal_code")
-  country    String   @default("IN")
-  isDefault  Boolean  @default(false) @map("is_default")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  customerId  String   @map("customer_id")
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label       String?
+  fullName    String?  @map("full_name")
+  phone       String?
+  line1       String
+  line2       String?
+  landmark    String?
+  city        String
+  state       String
+  postalCode  String   @map("postal_code")
+  country     String   @default("IN")
+  countryCode String?  @map("country_code")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   shippingOrders Order[] @relation("ShippingAddress")
   billingOrders  Order[] @relation("BillingAddress")
 
   @@index([customerId])
   @@map("addresses")
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  customerId String     @unique @map("customer_id")
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  items      CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id              String   @id @default(cuid())
+  cartId          String   @map("cart_id")
+  cart            Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  lineKey         String   @map("line_key")
+  productId       String   @map("product_id")
+  name            String
+  brand           String   @default("")
+  imageSrc        String   @default("") @map("image_src")
+  imageAlt        String   @default("") @map("image_alt")
+  sizeId          String   @map("size_id")
+  sizeLabel       String   @default("") @map("size_label")
+  colorId         String   @default("") @map("color_id")
+  colorLabel      String   @default("") @map("color_label")
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(12, 2)
+  unitMrp         Decimal  @map("unit_mrp") @db.Decimal(12, 2)
+  quantity        Int
+  serviceIds      Json     @map("service_ids")
+  serviceLabels   Json     @map("service_labels")
+  servicesPerUnit Decimal  @default(0) @map("services_per_unit") @db.Decimal(12, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([cartId, lineKey])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
 }
 
 model WishlistItem {
@@ -377,6 +422,8 @@ enum PaymentMethod {
   NET_BANKING
   WALLET
   COD
+  CASHFREE
+  STRIPE
 }
 
 model Order {
@@ -387,6 +434,10 @@ model Order {
   status          OrderStatus   @default(PENDING)
   paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
   paymentMethod   PaymentMethod? @map("payment_method")
+  paymentGateway  String?       @map("payment_gateway")
+  cashfreeOrderId String?       @unique @map("cashfree_order_id")
+  cashfreePaymentSessionId String? @map("cashfree_payment_session_id")
+  paidAt          DateTime?     @map("paid_at")
   subtotal        Decimal       @db.Decimal(12, 2)
   discount        Decimal       @default(0) @db.Decimal(12, 2)
   tax             Decimal       @default(0) @db.Decimal(12, 2)

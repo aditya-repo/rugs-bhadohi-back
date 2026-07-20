@@ -38,6 +38,11 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
   /** Shared secret for storefront customer sync/profile (Next.js server → API). */
   CUSTOMER_SYNC_SECRET: z.string().min(16).optional(),
+  /** Cashfree Payment Gateway (India). Use sandbox credentials for local/test. */
+  CASHFREE_APP_ID: z.string().optional(),
+  CASHFREE_SECRET_KEY: z.string().optional(),
+  CASHFREE_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
+  CASHFREE_API_VERSION: z.string().default("2023-08-01"),
 });
 const parsed = envSchema.safeParse(process.env);
 

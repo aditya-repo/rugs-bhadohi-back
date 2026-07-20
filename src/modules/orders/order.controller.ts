@@ -12,6 +12,13 @@ export class OrderController {
     sendSuccess(res, result.items, "Orders retrieved", 200, buildPaginationMeta(result.page, result.limit, result.total));
   });
 
+  listRecentForCustomer = asyncHandler(async (req, res: Response) => {
+    const email = String(req.query.email ?? "");
+    const limit = req.query.limit != null ? String(req.query.limit) : undefined;
+    const items = await orderService.listRecentForCustomer(email, limit);
+    sendSuccess(res, items, "Recent orders retrieved");
+  });
+
   getById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const order = await orderService.getById(getParam(req.params.id));
     sendSuccess(res, order);

@@ -20,4 +20,9 @@ export const createOrderNoteSchema = z.object({
   isInternal: z.boolean().optional(),
 });
 
+export const customerOrdersQuerySchema = z.object({
+  email: z.string().email(),
+  limit: z.string().optional(),
+});
+
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;

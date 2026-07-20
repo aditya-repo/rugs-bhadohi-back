@@ -57,6 +57,46 @@ export class OrderRepository {
     });
   }
 
+  findRecentByCustomerEmail(email: string, limit: number) {
+    return prisma.order.findMany({
+      where: {
+        customer: { email: email.toLowerCase() },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        items: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            product: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                images: {
+                  orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }],
+                  take: 1,
+                  select: { path: true, alt: true },
+                },
+              },
+            },
+            variant: {
+              select: {
+                id: true,
+                sku: true,
+                thumbnail: true,
+                length: true,
+                width: true,
+                attributes: true,
+              },
+            },
+          },
+        },
+        _count: { select: { items: true } },
+      },
+    });
+  }
+
   updateStatus(id: string, status: OrderStatus, note?: string) {
     return prisma.$transaction([
       prisma.order.update({ where: { id }, data: { status } }),
